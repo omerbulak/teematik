@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href='https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons' rel="stylesheet">
+  <link href="https://unpkg.com/vuetify/dist/vuetify.min.css" rel="stylesheet">
+  <link href="./css/c3.min.css" rel="stylesheet">
+  <script src="./js/d3.v3.min.js" charset="utf-8"></script>
+  <script src="./js/c3.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+   <script src="./js/html2canvas.min.js"></script>
+ <script src="./js/jspdf.min.js"></script>
+  <style type="text/css">
+    .dialog--scrollable{overflow: scroll !important;}
+    
+    table.newTable, table.newTable td, table.newTable th {  
+          border: 1px solid #ddd;
+          text-align: left;
+    }
+
+    table.newTable {
+            border-collapse: collapse;
+            width: 100%;
+    }
+
+    table.newTable th, table.newTable td {
+            padding: 15px;
+    }
+
+    /**/
+
+    table.newTable2, table.newTable2 td, table.newTable2 th {  
+          border: 1px solid #ddd;
+          text-align: left;
+    }
+
+    table.newTable2 {
+            border-collapse: collapse;
+            width: 100%;
+    }
+
+    table.newTable2 th, table.newTable2 td {
+            padding: 5px;
+    }
+
+    table.newTable2 tr.border2 > th, table.newTable2 tr.border2 > td, .border3{
+            border-bottom: 2px solid #ccc !important;
+    }
+
+    .c3-ygrid-line.grid90 line {
+        stroke: green;
+    }
+    .c3-ygrid-line.grid95 line {
+        stroke: red;
+    }
+    .c3-ygrid-line.grid99 line {
+        stroke: brown;
+    }
+    .c3-ygrid-line.grid85 line {
+        stroke: blue;
+    }
+    
+
+
+    /**/
+
+    tr.centered > th{text-align: center;}
+    tr.paddingall > th{padding: 10px 0;}
+
+    td.timeHead{padding:5px 0; background: #009688;}
+    td.timeResult{padding:5px 0; background: #1DE9B6;}
+    
+    /**Kronometre yapımı**/
+    
+     .element_inactive {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    .timer_wrapper{
+        position: relative;
+        width: 100%;
+    }
+    .timer_body{
+        position: relative;
+        display: table;
+        width: 100%;
+        height: 100px;
+        text-align: center;
+    }
+    .timer_body_text{
+        position: relative;
+        display: table-cell;
+        vertical-align: middle;
+        font-size: 40px;
+        color: #444444;
+    }
+    .timer_buttons_wrapper{
+        position: relative;
+        display: inline-flex;
+        width: 100%;
+        height: 40px;
+    }
+    .timer_button{
+        position: relative;
+        float: left;
+        width: calc((100% - 30px)/3);
+        height: 100%;
+        margin-right: 10px;
+        background-color: transparent;
+        font-size: 14px;
+        color: purple;
+        border: solid 1px purple;
+        border-radius: 4px;
+        outline: 0;
+        cursor: pointer;
+    }
+    .timer_buttons_wrapper .timer_button:last-child{
+        margin-right: 0;
+    }
+    .timer_button:hover{
+        background-color: purple;
+        color: #ffffff;
+    }
+
+    /**Kronometre yapımı**/
+
+    .arkaplan {background: #34e89e;  /* fallback for old browsers */
+background: -webkit-linear-gradient(to right, #0f3443, #34e89e);  /* Chrome 10-25, Safari 5.1-6 */
+background: linear-gradient(to right, #0f3443, #34e89e); }
+
+._container {
+    height: auto;
+    box-shadow: 0px 0px 0px #717171;
+    margin: 10px;
+    padding: 10px;
+    border-radius: 2px;
+    background: none;
+}
+.wrapper {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    /* margin-top: 100px; */
+}
+
+#_header_curve {
+  margin-top:-455px;
+    width: 100%;
+    height: 660px;
+    bottom: 0;
+    background-image: linear-gradient(to left bottom, #ae0000, #870016, #5c081b, #310d16, #000000);
+}
+
+
+    
+  </style>
+</head>
+<body>
+  <div id="app">
+    <v-app>
+      <v-card flat>
+      <v-toolbar  dark color="teal darken-3" flat extended>
+        <v-btn dark outline @click="cikisYap()">
+                  <v-icon>close</v-icon>
+                  Çıkış Yap
+                </v-btn>
+      </v-toolbar>
+      <v-layout row pb-2>
+        <v-flex xs10 offset-xs1>
+          <v-card class="card--flex-toolbar" style="margin-top:-64px;">
+            <v-toolbar card prominent>
+              <v-spacer></v-spacer>
+              <v-toolbar-title style="margin-left: 40px;" class="teal--text">TOPLAM EKİPMAN ETKİNLİĞİ</v-toolbar-title>
+              <v-spacer></v-spacer>
+              <v-menu bottom left>
+                <v-btn icon slot="activator">
+                  <v-icon>more_vert</v-icon>
+                </v-btn>
+                <v-list>
+                  <v-list-tile v-for="(item, i) in items" :key="i" @click="openWindow(i)">
+                    <v-icon class="mr-3">{{ item.icon }}</v-icon>
+                    <v-list-tile-title>{{ item.title }}</v-list-tile-title>
+                  </v-list-tile>
+                </v-list>
+              </v-menu>
+            </v-toolbar>
+            <v-divider></v-divider>
+            <v-card-text style="margin-top:-16px;">
+              <v-tabs icons-and-text centered dark color="white" v-model="tab">
+                    <v-tabs-slider color="darken-3 teal"></v-tabs-slider>
+                    <v-tab href="#girdiler" class="teal--text">
+                        Girdiler
+                        <v-icon class="teal--text">input</v-icon>
+                    </v-tab>
+                    <v-tab href="#sonuc" class="teal--text">
+                        Sonuç
+                        <v-icon class="teal--text">insert_chart</v-icon>
+                    </v-tab>
+                    <v-tab-item id="girdiler">
+                      <div>
+                        <v-expansion-panel>
+                          <v-expansion-panel-content v-model="panel1">
+                              <div slot="header" style="font-weight: bolder" class="teal--text">Form verileri</div>
+                              <v-card>
+                                  <v-card-text>
+                                    <table class="datatable table">
+                              <tbody style="color:black;">
+                                <tr>
+                                  <td >
+                                      Birim Adı
+                                  </td>
+                                  <td class="noPadding" >
+                                    <v-text-field label="Birim Adı" v-model="info.birim_adi"></v-text-field>
+                                  </td>
+                                  
+                                </tr>
+                                <tr>
+                                  <td>
+                                      Haftada kaç gün çalışılıyor
+                                  </td>
+                                  <td class="noPadding">
+                                    <v-select
+                                                :items="[1,2,3,4,5,6,7]"
+                                                v-model="info.haftada_kac_gun"
+                                                label="Haftada kaç gün çalışılıyor"
+                                                autocomplete
+                                            ></v-select>
+                                  </td>
+                                  
+                                </tr>
+                                <tr>
+                                  <td>
+                                      Günde kaç vardiya çalışılıyor
+                                  </td>
+                                  <td class="noPadding">
+                                    <v-select
+                                                :items="[1,2,3,4]"
+                                                v-model="info.gunde_kac_vardiya"
+                                                label="Günde kaç vardiya çalışılıyor"
+                                                autocomplete
+                                            ></v-select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                      Bir vardiyada kaç saat çalışılıyor
+                                  </td>
+                                  <td class="noPadding">
+                                    <v-select
+                                                :items="sayiUret(1,24)"
+                                                v-model="info.vardiya_kac_saat"
+                                                label="Bir vardiyada kaç saat çalışılıyor"
+                                                autocomplete
+                                            ></v-select>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    Bir vardiyada kaç dakika mola var
+                                  </td>
+                                  <td class="noPadding">
+                                    <v-select
+                                                :items="[5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100]"
+                                                v-model="info.vardiyada_kac_dakika_mola"
+                                                label="Bir vardiyada kaç dakika mola var"
+                                                autocomplete
+                                            ></v-select>
+                                  </td>
+                                </tr>
+                                
+                                
+                                <tr>
+                                  <td>
+                                    İdeal Devir Zamanı
+                                  </td>                           
+                                    <td>
+                                    <v-text-field v-model="ideal_devir_zamani" single-line label="İdeal Devir Zamanı"></v-text-field>
+                                        </td>
+                                        <!-- İdeal Devir Zamanı Hesapla-->
+                                        <tr></tr>
+                                        <tr></tr>
+                                        <tr></tr>
+                                        <tr></tr>
+                                        <tr></tr>
+                                        <tr></tr>
+                                        <td></td>
+                                        <td>
+                                    <v-dialog
+                                      fullscreen
+                                          top
+                                            offset-y
+                                            v-model="sureler_diyalog"
+                                        >
+                                            <v-btn color="deep-orange" dark slot="activator">Devir zamanı hesapla</v-btn>
+                                            <v-card>
+                                                <v-list class="pa-3">
+                                                  <table class="newTable2">
+                                                    <thead>
+                                                      <tr class="centered paddingall border2">
+                                                        <th style="padding: 0 5px;">No</th>
+                                                        <th>İşin Tanımı</th>
+                                                        <th></th>
+                                                        <th v-for="(t, index) in tempolar">{{index + 1}}</th>
+                          
+                                                        <th></th>
+                                                      </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                      <template v-for="(sureVeri, index) in sureler_array">
+                                                        <tr>
+                                                          <td rowspan="2" class="border3">{{index + 1}}</td>
+                                                          <td rowspan="2" class="border3">{{sureVeri.isin_tanimi}}</td>
+                                                          <td>T</td>
+                                                          <td>{{sureVeri.tempolar[0]}}</td>
+                                                          <td>{{sureVeri.tempolar[1]}}</td>
+                                                          <td>{{sureVeri.tempolar[2]}}</td>
+                                                          <td>{{sureVeri.tempolar[3]}}</td>
+                                                          <td>{{sureVeri.tempolar[4]}}</td>
+                                                          <td>{{sureVeri.tempolar[5]}}</td>
+                                                          <td>{{sureVeri.tempolar[6]}}</td>
+                                                          <td>{{sureVeri.tempolar[7]}}</td>
+                                                          <td>{{sureVeri.tempolar[8]}}</td>
+                                                          <td>{{sureVeri.tempolar[9]}}</td>
+                                                          <td rowspan="2">
+                                                            <v-btn color="teal" icon dark @click="sureVeriSil(index)">
+                                                              <v-icon>delete</v-icon>
+                                                            </v-btn>
+                                                          </td>
+                                                        </tr>
+                                                        <tr class="border2">
+                                                          <td>t(sn)</td>
+                                                          <td >{{sureVeri.sureler[0]}}</td>
+                                                          <td>{{sureVeri.sureler[1]}}</td>
+                                                          <td>{{sureVeri.sureler[2]}}</td>
+                                                          <td>{{sureVeri.sureler[3]}}</td>
+                                                          <td>{{sureVeri.sureler[4]}}</td>
+                                                          <td>{{sureVeri.sureler[5]}}</td>
+                                                          <td>{{sureVeri.sureler[6]}}</td>
+                                                          <td>{{sureVeri.sureler[7]}}</td>
+                                                          <td>{{sureVeri.sureler[8]}}</td>
+                                                          <td>{{sureVeri.sureler[9]}}</td>
+                                                        </tr>
+                                                      </template>
+                                                      <template>
+                                                        <tr>
+                                                          <td rowspan="3" class="red--text">*</td>
+                                                          <td rowspan="3">
+                                                            <v-text-field v-model="isin_tanimi"></v-text-field>
+                                                          </td>
+                                                          <td>T</td>
+                                                          <td v-for="(t, index) in tempolar">
+                                                            <v-select :items="tempo_sureleri" solo autocomplete v-model="tempolar[index]" label="Tempo" append-icon=""></v-select>
+                                                        </td>
+                                                        
+                                                        </tr>
+                                                        <tr>
+                                                          <td>t(sn)</td>
+                                                          <td v-for="(s, index) in sureler">
+                                                            <v-text-field solo v-model="sureler[index]" label="Süre"></v-text-field>
+                                                        </td>
+            
+                                                        </tr>
+                                                        
+                                                      </template>
+                                                    </tbody>
+                                                  </table>
+                                                  <v-list-tile-actions style="padding: 0 10px;">
+                                                    <v-layout row wrap>
+                                                      <v-flex xs6>
+                                                        <v-btn style="margin-right:10px;" block color="deep-orange " @click="yeniVeriGirisiEkle">
+                                                        <span>Faaliyet Ekle</span>
+                                                      </v-btn>
+                                                    </v-flex>
+                                                    <v-flex xs6>
+                                                      <v-btn style="margin-left:10px;" block color="deep-orange " @click="sutunEkle(true)">
+                                                        <span>Sütun Ekle</span>
+                                                      </v-btn>
+                                                    </v-flex>
+                                                  </v-layout>
+                                                  </v-list-tile-actions>
+
+                                                </v-list>
+
+                                                <v-card-actions>
+                                                    <v-spacer></v-spacer>
+                                                    <v-btn flat @click="sureler_diyalog = false">İptal</v-btn>
+                                                    <v-btn color="primary" flat @click="sureleriKaydet">Kaydet</v-btn>
+                                                </v-card-actions>
+
+                                                <div class="timer_wrapper">
+                                                <div class="timer_body">
+                                                  <span class="timer_body_text">{{dakika | zeroPad}} : {{saniye | zeroPad}}</span>
+                                                </div>
+                                                <div class="timer_buttons_wrapper">
+                                                    <button type="button" class="timer_button start_timer" @click="kronometreBaslat">Başlat</button>
+                                                    <button type="button" class="timer_button stop_timer" @click="kronometreTur">Tur</button>
+                                                    <button type="button" class="timer_button stop_timer" @click="kronometreDurdur">Dur</button>
+                                                    <button type="button" class="timer_button reset_timer" @click="kronometreTemizle">
+                                                    Reset</button>
+                                                </div>
+                                                </div>
+                                                <v-list-tile-actions style="padding: 0 10px;">
+                                                    <v-layout row wrap>
+                                                      <v-flex xs6>
+                                                        <table style="margin-top: 10px; margin-left: 10px;">
+                                                  <tbody>
+                                                      <tr>
+                                                        <td class="timeHead" style="padding: 10px;">
+                                                        Gözlem Yeterlilik Değeri
+                                                        </td>
+                                                        <td class="timeResult" style="padding: 10px;">
+                                                        {{gydBul}}
+                                                        </td>
+                                                      </tr>
+                                                      
+                                                      <tr>
+                                                        <td class="timeHead" style="padding: 10px;">
+                                                            Normal Zaman
+                                                        </td>
+                                                        <td class="timeResult" style="padding: 10px;">
+                                                            {{normalZamanBul}}
+                                                        </td>
+                                                      </tr>
+
+                                                      <tr>
+                                                        <td class="timeHead" style="padding: 10px;">
+                                                            Standart Zaman
+                                                        </td>
+                                                        <td class="timeResult" style="padding: 10px;">
+                                                            {{standartZamanBul}}
+                                                        </td>
+                                                      </tr>
+                                                    </tbody>
+                                                </table>      
+                                                    </v-flex>
+                                                    <v-flex xs6>
+                                                      <table style="margin-top: 10px; margin-left: 10px;">
+                                                      <tr>
+                                                        <td><v-btn color="deep-orange" style="margin-left:10px;" class="mt-3 mb-2" solo block @click="DinlenmePayiHesapla = true" >
+                                                        <v-icon class="mr-3">navigate_next</v-icon> Dinlenme Payları Hesapla       
+                                                        </v-btn></td>
+                                                        <td class="noPadding">
+                                                        <v-text-field label="Dinlenme Payı" style="margin-left: 20px;" v-model="toplamDinlenmePayi"></v-text-field>
+                                                      </td>
+                                                      </tr>
+                                                      
+
+                                                </table>      
+                                                    </v-flex>
+                                                  </v-layout>
+                                                  </v-list-tile-actions>
+                                                   
+                                            </v-card>
+                                        </v-dialog>
+
+                                  </td>
+                                        <!-- İdeal Devir Zamanı Hesapla-->
+                                </tr>
+                                                  
+                              </tbody>
+                            </table>                
+                                  </v-card-text>
+                              </v-card>
+                              <!--Sonraki adım-->
+                          <v-btn color="orange" class="mt-3 mb-2" solo block @click="sonrakiAdimButonu1()">
+                        <v-icon class="mr-3">navigate_next</v-icon> Sonraki Adım        
+                        </v-btn>
+                        <!--Sonraki adım-->
+                          </v-expansion-panel-content>
+                          <v-expansion-panel-content v-model="panel2">
+                              <div slot="header" style="font-weight: bolder" class="teal--text">Ekipman verileri</div>
+                              <v-card>
+                                  <v-card-text>
+                                    <table class="" style="width: 100%;">
+                              <thead>
+                                <tr>
+                                  <th class="column text-xs-left"></th>
+                                  <th class="column text-xs-left">Günler</th>
+                                  <th class="column text-xs-left">Duruş Kayıpları</th>
+                                  <th class="column text-xs-left">Üretim Miktarı</th>
+                                  <th class="column text-xs-left">Kusurlu Ürün Miktarı</th>   
+                                  <th ></th>                       
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr v-for="(veri, index) in tabloverileri">
+                                  <td>{{ index + 1 }}.</td>
+                                  <td>{{ veri.ts }}</td>
+                                  <td>{{ veri.akds }}</td>
+                                  <td>{{ veri.um }}</td>
+                                  <td>{{ veri.kum }}</td>
+                                  <td rowspan="1">
+                                    <v-btn color="teal" icon dark @click="ekipmanVeriSil(index)">
+                                    <v-icon>delete</v-icon>
+                                    </v-btn>
+                                </td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    <v-btn flat icon @click="tabloyaVeriEkle">
+                                      <v-icon color="teal">add_circle_outline</v-icon>
+                                    </v-btn>
+                                  </td>
+                                  <td>
+                                    <v-menu
+                                          ref="tarih_modal"
+                                          lazy
+                                          :close-on-content-click="false"
+                                          v-model="tarih_modal"
+                                          transition="scale-transition"
+                                          offset-y
+                                          full-width
+                                          :nudge-right="40"
+                                          min-width="290px"
+                                      >
+                                          <v-text-field
+                                              slot="activator"
+                                              label="Tarih"
+                                              v-model="tarih_suresi"
+                                              prepend-icon="event"
+                                              readonly
+                                          ></v-text-field>
+                                          <v-date-picker
+                                              ref="picker"
+                                              v-model="tarih_suresi"
+                                              @change="saveDate"
+                                              min="2000-01-01"
+                                              max="2023-01-01"
+                                          ></v-date-picker>
+                                      </v-menu>
+                                    </td>
+                                  <td>
+                                    <v-text-field v-model="ariza_kaynakli_durus_suresi" single-line label="Arıza Kaynaklı"></v-text-field>
+                                        </td>
+                                        <td>
+                                    <v-text-field v-model="uretim_miktari" single-line label="Üretim Miktarı"></v-text-field>
+                                        </td>
+                                        <td>
+                                    <v-text-field v-model="kusurlu_urun_miktari" single-line label="Kusurlu Ürün Miktarı"></v-text-field>
+                                        </td>                       
+                                </tr>
+                              </tbody>
+                            </table>
+                                  </v-card-text>
+                              </v-card>
+                              <!--Sonraki adım-->
+                          <v-btn color="orange" class="mt-3 mb-2" solo block @click="sonrakiAdimButonu2()">
+                        <v-icon class="mr-3">navigate_next</v-icon> Sonraki Adım        
+                        </v-btn>
+                        <!--Sonraki adım-->
+                          </v-expansion-panel-content>
+                      </v-expansion-panel>
+                  </div>
+                    </v-tab-item>
+                    <v-tab-item id="sonuc">
+                      <div>
+                        <table class="newTable">
+                      <thead>
+                        <tr>
+                          <th>
+                            Tarih
+                          </th>
+                          <th>
+                            Duruş Kayıpları
+                          </th>
+                          <th>
+                            Üretim Miktarı
+                          </th>
+                          <th>
+                            Kusurlu Ürün Miktarı
+                          </th>
+                          <th>
+                            <v-tooltip top>
+                              <span slot="activator">HBO</span>
+                              <span>Hazır Bulunma Oranı</span>
+                            </v-tooltip>
+                          </th>
+                          <th>
+                            <v-tooltip top>
+                              <span slot="activator">PO</span>
+                              <span>Performans Oranı</span>
+                            </v-tooltip>
+                          </th>
+                          <th>
+                            <v-tooltip top>
+                              <span slot="activator">KO</span>
+                              <span>Kalite Oranı</span>
+                            </v-tooltip>
+                          </th>
+                          <th>
+                            <v-tooltip top>
+                              <span slot="activator">TEE</span>
+                              <span>Toplam Ekipman Etkinliği</span>
+                            </v-tooltip>
+                          </th>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(veri, index) in tabloverileri">
+                          <td>
+                            {{ veri.ts }}
+                          </td>
+                          <td>
+                            {{ veri.akds }}
+                          </td>
+                          <td>
+                            {{ veri.um }}
+                          </td>
+                          <td>
+                            {{ veri.kum }}
+                          </td>
+                          <td>
+                            {{ veri.hbo }}
+                          </td>
+                          <td>
+                            {{ veri.po }}
+                          </td>
+                          <td>
+                            {{ veri.ko }}
+                          </td>
+                          <td>
+                            {{ veri.tee }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <v-list-tile-actions style="padding: 0 10px;">
+                  <v-layout row wrap>
+                  <v-flex xs6>
+                  <v-btn color="orange" style="margin-right:10px;" class="mt-3 mb-2" solo block @click="tabloHesaplama">
+                  <v-icon class="mr-3">navigate_next</v-icon> Sonuç Analizi       
+                  </v-btn>
+                  </v-flex>
+                  <v-flex xs6>
+                  <v-btn color="blue" style="margin-left:10px;" class="mt-3 mb-2" solo block @click="grafikGoster">
+                  <v-icon class="mr-3">navigate_next</v-icon> Grafik Göster       
+                  </v-btn>
+                  </v-flex>
+                  </v-layout>
+                  </v-list-tile-actions>
+                    </v-tab-item>
+                </v-tabs>
+            </v-card-text>
+          </v-card>
+        </v-flex>
+      </v-layout>
+    </v-card>
+    <!-- sonuc diyalog -->
+      <v-dialog
+                v-model="sonuc_diyalog"
+                fullscreen
+                transition="dialog-bottom-transition"
+                :overlay="false"
+                scrollable
+            >
+                <v-card tile>
+                    <v-toolbar card dark color="teal">
+                        <v-btn icon @click.native="sonuc_diyalog = false" dark>
+                            <v-icon>close</v-icon>
+                        </v-btn>
+                        <v-toolbar-title>Sonuç</v-toolbar-title>
+                        <v-spacer></v-spacer>
+                        <v-btn flat @click.native="pdfIndir" dark><v-icon>description</v-icon>
+                            Rapor 
+                            
+                        </v-btn>
+                    </v-toolbar>
+                    <v-card-text>
+                      <v-layout id="grafikler" row wrap>
+                        <v-flex xs12>
+                          <v-layout row wrap>
+                        <v-flex xs3 >
+                            <div id="chartp1"></div>
+                        </v-flex>
+                        <v-flex xs3 >
+                            <div id="chartp2"></div>
+                        </v-flex>
+                        <v-flex xs3 >
+                            <div id="chartp3"></div>
+                        </v-flex>
+                        <v-flex xs3 >
+                            <div id="chartp4"></div>
+                        </v-flex>
+                    </v-layout>
+                  </v-flex>
+              <v-flex xs12 >
+                        <div id="chartc1"></div>
+                    </v-flex>
+                </v-layout>
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
+    <!-- sonuc diyalog -->
+    <!-- Hakkında penceresi şablonu -->
+      <v-dialog
+                v-model="hakkinda_diyalog"
+                fullscreen
+                transition="dialog-bottom-transition"
+                :overlay="false"
+                scrollable
+            >
+                <v-card tile>
+                    <v-toolbar card dark color="teal">
+                        <v-btn icon @click.native="hakkinda_diyalog = false" dark>
+                            <v-icon>close</v-icon>
+                        </v-btn>
+                        <v-toolbar-title>Hakkında</v-toolbar-title>
+                    </v-toolbar>
+                    <v-card-text>
+                      <v-expansion-panel inset>
+                        <v-expansion-panel-content>
+                            <div slot="header">Amaç</div>
+                            <v-card>
+                                <v-card-text>
+                                  <ul>
+                                    <li> Toplam Ekipman Etkinliği analizi yaparken gerekli olan araçları bir araya getiren, taşınabilir(Platform bağımsız) bir uygulamadır.</li>
+                                    <li> Amacı, hesaplama ve yorum gerektiren Toplam Ekipman Etkinliği çalışmasının aşamalarını daha hızlı ve kolay hale getirebilmektir. </li>
+                                  </ul>
+                                </v-card-text>
+                            </v-card>
+                        </v-expansion-panel-content>
+                        <v-expansion-panel-content>
+                            <div slot="header">Hakkında</div>
+                            <v-card>
+                                <v-card-text> Toplam Ekipman Etkinliği çalışmalarını daha dinamik bir biçimde, tekrar kullanılabilir ve platformun bağımsız bir şekilde çalışır olabilmesi için;
+                                <p>Samsun Ondokuz Mayıs Üniversitesi Endüstri Mühendisliği bölümü öğrencileri olarak "TEEΜΛΤİΚ" adlı bir uygulama tasarladık.</p></v-card-text>
+                            </v-card>
+                        </v-expansion-panel-content>
+                    </v-expansion-panel>
+                    </v-card-text>
+                    <v-spacer><center>TEEΜΛΤİΚ</center>
+                    <p><center>Ondokuz Mayıs Üniversitesi</center></p>
+                    <p><center>Endüstri Mühendisliği Bölümü</center></p>
+                    <p><center>Bitirme Projesi kapsamında</center></p>
+                    <p><center>gerçekleştirilen bir yazılımdır.</center></p>
+                    <p><center>Samsun - 2018</center></p>
+                    <center><img src="./img/logo.png" /></center>
+                    </v-spacer>
+                    <div style="flex: 1 1 auto;"/>
+                </v-card>
+            </v-dialog>
+    <!-- Hakkında penceresi şablonu -->
+    <template>
+      <v-layout row justify-center>
+        <v-dialog v-model="kayit_diyalog" persistent max-width="300px">
+          <v-card>
+            <v-card-title>
+              <span class="headline">KAYIT OL!</span>
+            </v-card-title>
+            <v-card-text>
+              <v-container grid-list-md>
+                <v-layout wrap>
+                  <v-flex xs12>
+                    <v-text-field
+                    prepend-icon="person"
+                      label="Ad Soyad"
+                      required
+                    ></v-text-field>
+                  </v-flex>
+                  <v-flex xs12>
+                    <v-text-field prepend-icon="mail" label="E-posta" required></v-text-field>
+                  </v-flex>
+                  <v-flex xs12>
+                    <v-text-field prepend-icon="lock" label="Şifre" type="password" required></v-text-field>
+                  </v-flex>
+    
+                </v-layout>
+              </v-container>
+              <small>*gerekli bilgi</small>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn color="blue darken-1" flat @click.native="kayit_diyalog = false">Çıkış</v-btn>
+              <v-btn color="blue darken-1" flat @click.native="kayit_diyalog = false">Kayıt Ol</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </v-layout>
+    </template>
+
+    <!-- Ekip penceresi şablonu -->
+      <v-dialog
+                v-model="ekip_diyalogg"
+                transition="dialog-bottom-transition"
+                :overlay="false"
+                fullscreen
+                scrollable
+            >
+                <v-card>
+                <v-card-actions>
+                  <v-btn color="primary" icon flat @click="ekipDiyalogKapat">
+                    <v-icon>close</v-icon>
+                  </v-btn>
+                </v-card-actions>
+                <v-card-title>
+                  <v-container fluid>
+                    <v-layout>
+                      <v-flex>
+                        <v-card style="text-align: center;">
+                          <v-container fluid v-bind="{ [`grid-list-xs`]: true }">
+                            <v-subheader style="font-size:18px;">EKİP</v-subheader>
+                            <v-layout row wrap>
+                              <v-flex xs6 md3 v-for="team_member in team_list" :key="team_member">
+                                <v-card flat tile>
+                                  <img style="border-radius: 50%;" :src="team_member.img" height="150px">
+                                  <v-card-text>
+                                    <span style="font-weight: bolder;">{{team_member.name}}</span> <br>
+                                    {{team_member.project_work}} <br> <br>
+                                    {{team_member.university}} <br>
+                                    {{team_member.department}}
+                                  </v-card-text>
+                                </v-card>
+                              </v-flex>
+                            </v-layout>
+                            <v-layout row wrap class="mt-5">
+                              <v-flex>
+                                <v-subheader style="font-size:18px;">DANIŞMAN</v-subheader>
+                                <v-card flat>
+                                  <img style="border-radius: 50%;" :src="mentor.img" height="150px">
+                                  <v-card-text>
+                                    <span style="font-weight: bolder;">{{mentor.name}}</span> <br>
+                                    {{mentor.project_work}} <br> <br>
+                                    {{mentor.university}} <br>
+                                    {{mentor.department}}
+                                  </v-card-text>
+                                </v-card>
+                              </v-flex>
+                            </v-layout>
+                          </v-container>
+                        </v-card>
+                      </v-flex>
+                    </v-layout>
+                  </v-container>
+                </v-card-title>
+              </v-card>
+            </v-dialog>
+    <!-- Ekip penceresi şablonu -->
+    <!-- Yardım şablonu -->
+                    <v-dialog
+                        v-model="yardim_diyalog"
+                        fullscreen
+                        transition="dialog-bottom-transition"
+                        :overlay="false"
+                        scrollable
+                    >
+                        <v-card tile>
+                            <v-toolbar card dark color="teal">
+                                <v-btn icon @click.native="yardim_diyalog = false" dark>
+                                    <v-icon>close</v-icon>
+                                </v-btn>
+                                <v-toolbar-title>Yardım</v-toolbar-title>
+                            </v-toolbar>
+                            <v-card-text>
+                              <embed src="pdf/teematik_yardim.pdf" style="margin:0 auto;" width="1280" height="600" alt="pdf" pluginspage="http://www.adobe.com/products/acrobat/readstep2.html">
+                            </v-card-text>
+                            
+                            <div style="flex: 1 1 auto;"/>
+                        </v-card>
+                      </v-dialog>
+    <!-- Yardım şablonu -->
+    <!-- Giriş penceresi şablonu -->
+      <v-dialog
+                v-model="giris_diyalog"
+                transition="dialog-bottom-transition"
+                :overlay="true"
+                max-width="480px"
+                fullscreen
+                persistent
+                scrollable
+                id="overflow_goster"
+            >
+
+            <v-card>
+              <div style="margin-top:-50px;height: 480px;/* background: #FF5722; */position: relative;/* background-size: contain; */width: 100%;">
+            <div class="wrapper" style="/* max-width: 320px; */">
+                <div class="_container" style="margin-top: 100px;position: relative;z-index: 9999;">
+                    <div id="login" style="text-align:center;margin-bottom: 40px;" class=""> 
+                        <img src="/img/tee.png" width="100">
+                    </div>
+                    <div id="_login" style="background: white;box-shadow: rgb(176, 176, 176) 0px 0px 1px 0px;border-radius: 12px;">
+                      <div style="padding: 10px 15px;text-align: center;">
+                              <v-form style="background: white; width:320px; text-align: center; border-radius: 16px; margin: 0 auto;"  >
+                                  <v-text-field v-model="kullanici_adi" prepend-icon="person" label="Kullanıcı Adı" type="text" ></v-text-field>
+                                  <v-text-field v-model="kullanici_sifre" prepend-icon="lock" label="Şifre" type="password"></v-text-field>
+                                  <v-list-tile-actions >
+                                  <v-layout row wrap>
+                                  <v-flex xs6>
+                                  <v-btn @click= "kayitOl()" color="blue ">Kayıt Ol</v-btn >
+                                  </v-flex>
+                                  <v-flex xs6>
+                                  <v-btn @click= "girisYap()" color="orange">Giriş Yap</v-btn>
+                                  </v-flex>
+                                  </v-layout>
+                                  </v-list-tile-actions> 
+                              </v-form>
+                      </div>
+                    </div>
+                </div>
+            </div>
+            <svg viewBox="0 0 1280 70" preserveAspectRatio="none" id="_header_curve" fill="orange">
+            <polygon points="1280 0 1280 70 0 70" fill="#ffffff"></polygon>
+        </svg>
+        </div>
+            </v-card>                
+
+            </v-dialog>
+    <!-- Giriş penceresi şablonu -->
+    <!--Dinlenme payı hesaplama penceresi -->
+    <v-dialog
+                v-model="DinlenmePayiHesapla"
+                fullscreen
+                transition="dialog-bottom-transition"
+                :overlay="false"
+                scrollable
+            >
+                <v-card tile>
+                    <v-toolbar card dark color="teal">
+                        <v-btn icon @click.native="DinlenmePayiHesapla = false" dark>
+                            <v-icon>close</v-icon>
+                        </v-btn>
+                        <v-toolbar-title></v-toolbar-title>
+                    </v-toolbar>
+                    <v-card-text>
+                     <template>
+  <v-container fluid>
+    <v-layout row wrap>
+      <v-flex xs6>
+        <v-subheader style="color:black;font-weight: bolder;">A.KİŞİSEL İHTİYAÇLAR</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+        <v-select
+          required
+          :rules="secimKontrol"
+          :items="KisiselIhtiyaclarArray"
+          item-text="title"
+          item-value="value"
+          v-model="KisiselIhtiyaclar"
+          label="Bir değer seçiniz!"
+          single-line
+        ></v-select>
+      </v-flex>
+       <v-flex xs12>
+
+        <v-subheader style="color:black;font-weight: bolder;">B.YORULMA PAYLARI</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+
+        <v-subheader style="color:#333;">B1.Bedensel Çaba Yorgunluğu ve Beceri</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+        <v-select
+          required
+          :rules="secimKontrol"
+          :items="BedenselYorgunlukArray"
+          item-text="title"
+          item-value="value"
+          v-model="BedenselYorgunluk"
+          label="Bir değer seçiniz!"
+          single-line
+        ></v-select>
+      </v-flex>
+      <v-flex xs6>
+        <v-subheader style="color:#333;">B2.Düşünsel Çaba Yorgunluğu</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+        <v-select
+          required
+          :rules="secimKontrol"
+          :items="DusunselYorgunlukArray"
+          item-text="title"
+          item-value="value"
+          v-model="DusunselYorgunluk"
+          label="Bir değer seçiniz!"
+          single-line
+        ></v-select>
+      </v-flex>
+      <v-flex xs6>
+        <v-subheader style="color:#333;">B3.Çalışma Pozisyonu</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+        <v-select
+          required
+          :rules="secimKontrol"
+          :items="CalismaPozisyonuArray"
+          item-text="title"
+          item-value="value"
+          v-model="CalismaPozisyonu"
+          label="Bir değer seçiniz!"
+          single-line
+        ></v-select>
+      </v-flex>
+      <v-flex xs6>
+        <v-subheader style="color:#333;">B4.Gürültü</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+        <v-select
+          required
+          :rules="secimKontrol"
+          :items="GurultuArray"
+          item-text="title"
+          item-value="value"
+          v-model="Gurultu"
+          label="Bir değer seçiniz!"
+          single-line
+        ></v-select>
+      </v-flex>
+      <v-flex xs6>
+        <v-subheader style="color:#333;">B5.Göz Yorgunluğu</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+        <v-select
+          required
+          :rules="secimKontrol"
+          :items="GozYorgunluguArray"
+          item-text="title"
+          item-value="value"
+          v-model="GozYorgunlugu"
+          label="Bir değer seçiniz!"
+          single-line
+        ></v-select>
+      </v-flex>
+      <v-flex xs6>
+        <v-subheader style="color:#333;">B6.Çevre Koşulları</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+        <v-select
+          required
+          :rules="secimKontrol"
+          :items="CevreKosullariArray"
+          item-text="title"
+          item-value="value"
+          v-model="CevreKosullari"
+          label="Bir değer seçiniz!"
+          single-line
+        ></v-select>
+      </v-flex>
+      <v-flex xs6>
+        <v-subheader style="color:black;font-weight: bolder;">C.GECİKME PAYLARI</v-subheader>
+      </v-flex>
+      <v-flex xs6>
+        <v-select
+          required
+          :rules="secimKontrol"
+          :items="GecikmePaylariArray"
+          item-text="title"
+          item-value="value"
+          v-model="GecikmePaylari"
+          label="Bir değer seçiniz!"
+          single-line
+        ></v-select>
+      </v-flex>
+      <v-flex xs6>
+
+      </v-flex>
+      <v-flex xs6 style="text-align: right;">
+        <v-btn color="primary" flat solo @click="dinlenmePaylariKaydet">Kaydet</v-btn>
+      </v-flex>
+    </v-layout>
+  </v-container>
+</template>
+                    </v-card-text>
+                    <div style="flex: 1 1 auto;"/>
+                </v-card>
+            </v-dialog>
+            <!--Dinlenme payı hesaplama penceresi -->
+
+             <v-snackbar
+              :timeout="3000"
+              top
+              left
+              v-model="dinlenmePaylariDoldurAlert"
+    >
+    Tüm Dinlenme Paylarını Giriniz
+      
+      <v-btn flat color="pink" @click.native="dinlenmePaylariDoldurAlert = false">Close</v-btn>
+    </v-snackbar>
+
+
+    </v-app>
+  </div>
+  <script src="https://unpkg.com/vue/dist/vue.js"></script>
+  <script src="https://unpkg.com/vuetify/dist/vuetify.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
